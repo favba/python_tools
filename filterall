@@ -1,0 +1,80 @@
+#!/usr/bin/env python
+"""
+Filter all data and produce models
+"""
+import sys
+import argparse
+import os
+import subprocess
+
+parser = argparse.ArgumentParser(description='Filter all data and produce models')
+parser.add_argument("fend", type = str, help = "Use files ending with 'fend'")
+parser.add_argument("width", type = int, help = "Filter width. How many times the grid spacing")
+parser.add_argument("-v", "--verbose", help="increase output verbosity",action="store_true")
+group = parser.add_mutually_exclusive_group(required=False)
+group.add_argument('-g','--Gaussian', action = 'store_true', help="(Default) Use Gaussian kernel")
+group.add_argument('-c','--CutOff', action = 'store_true', help="Use Sharp spectral cutoff kernel")
+
+args = parser.parse_args()
+
+filestofilter = ['u1.','u2.','u3.','u1u1.','u1u2.','u1u3.','u2u2.','u2u3.','u3u3.']
+
+for i, elem in enumerate(filestofilter): filestofilter[i] = elem+args.fend
+
+fil = 'G'
+if args.CutOff: fil = 'C'
+
+f = open(os.devnull, "w")
+print('\n')
+for elem in filestofilter:
+  if args.verbose: print('Filtering file {} ...'.format(elem))
+  subprocess.call(["/home/felipe_a/work/mywork/LES_Filters/lesfilter.py", elem, str(args.width),fil],stdout=f)
+  
+if args.verbose: print('\nDone')
+
+path = 'Filtered_Fields/Gaussian/N'+str(args.width)
+
+if args.CutOff:path = 'Filtered_Fields/CutOff/N'+str(args.width)
+
+os.chdir(path)
+
+if args.verbose: print('\nComputing the strain rate tensor...')
+subprocess.call(["makeD.py", fil, str(args.width)],stdout=f)
+
+if args.verbose: print('\nComputing tensor P...')
+subprocess.call(["makeP.py", fil, str(args.width)],stdout=f)
+
+if args.verbose: print('\nComputing the residual stress tensor...')
+subprocess.call(["makeT.py", fil, str(args.width)],stdout=f)
+
+if args.verbose: print('\nProducing Model I...')
+subprocess.call(["Model_I.py", fil, str(args.width)],stdout=f)
+
+os.chdir('Model_I')
+if args.verbose: print('\nProducing pdf of Model I index...')
+subprocess.call(["probdf", 'index1'],stdout=f)
+
+os.chdir('../')
+if args.verbose: print('\nProducing Model III...')
+subprocess.call(["Model_III.py", fil, str(args.width)],stdout=f)
+
+os.chdir('Model_III')
+if args.verbose: print('\nProducing pdf of Model III index...')
+subprocess.call(["probdf", 'index3'],stdout=f)
+
+os.chdir('../')
+if args.verbose: print('\nProducing Model V...')
+subprocess.call(["Model_V.py", fil, str(args.width)],stdout=f)
+
+os.chdir('Model_V')
+if args.verbose: print('\nProducing pdf of Model V index...')
+subprocess.call(["probdf", 'index'],stdout=f)
+
+os.chdir('../')
+if args.verbose: print('\nCalculating Production...')
+subprocess.call(["makepr", fil, str(args.width)],stdout=f)
+
+if args.verbose: print('\nCalculating Residual stress modlue...')
+subprocess.call(["makemodT.py", fil, str(args.width)],stdout=f)
+
+if args.verbose: print('\nAll done!')

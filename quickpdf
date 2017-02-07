@@ -1,0 +1,49 @@
+#!/usr/bin/env python
+
+import numpy as np
+import matplotlib.pyplot as plt
+import sys
+import os
+from globalfile import readglobal
+
+#plt.style.use('dark_background')
+fig = plt.figure()#facecolor='black'
+
+ax = [None]*len(sys.argv[1:])
+index = [None]*len(sys.argv[1:])
+plot = [None]*len(sys.argv[1:])
+
+if os.path.exists('./global'): path='./'
+elif os.path.exists('../global'): path='../'
+elif os.path.exists('../../global'): path='../../'
+elif os.path.exists('../../../global'): path='../../../'
+elif os.path.exists('../../../../global'): path='../../../../'
+elif os.path.exists('../../../../../global'): path='../../../../../'
+else: path = input('Please specify global file directory path: ')
+
+nx,ny,nz,xDomainSize,yDomainSize,zDomainSize = readglobal(path=path,tell=False)
+
+
+for i, files in enumerate(sys.argv[1:]):
+  ax[i] = fig.add_subplot(111)
+
+  sizefile = os.path.getsize(files)
+
+  if sizefile == nx*ny*nz*8 :
+    index[i] = np.memmap(files,shape=(nx,ny,nz),order='F',dtype='float64',mode='r')
+  elif sizefile == (nx+2)*ny*nz*8: 
+    index[i] = np.memmap(files,shape=(nx+2,ny,nz),order='F',dtype='float64',mode='r')[:-2,:,:]
+  elif sizefile == nx*ny*nz*4 :
+    index[i] = np.memmap(files,shape=(nx,ny,nz),order='F',dtype='float32',mode='r')
+  elif sizefile == (nx+2)*ny*nz*4:
+    index[i] = np.memmap(files,shape=(nx+2,ny,nz),order='F',dtype='float32',mode='r')[:-2,:,:]
+
+  y,binEdges=np.histogram(index[i],bins=300,density=True)
+  index[i]= None
+  x = 0.5*(binEdges[1:]+binEdges[:-1])
+  plot[i]=ax[i].plot(x,y,'-',label=files)
+  ax[i].legend()
+  ax[i].grid(True)
+
+plt.show()
+#fig1.savefig(sys.argv[1]+'pdf.png', bbox_inches='tight')

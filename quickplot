@@ -1,0 +1,127 @@
+#!/usr/bin/env python
+"""
+Make colormap of a slice of the input file. A file named "global" must be present in the directory or parent directories
+"""
+import numpy as np
+import sys
+from globalfile import readglobal
+#import matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gp
+import matplotlib.colors as mcolors
+import os
+from colormaptools import remappedColorMap
+from discrete_cmap import discrete_cmap
+import argparse
+import cubehelix
+from parallelfuncs import maxminmean
+
+parser = argparse.ArgumentParser(
+  description='Make colormap of a slice of the input file. A file named "global" must be present in the directory or parent directories')
+parser.add_argument("file", type = str, help = "file with data to be ploted")
+parser.add_argument("--color",'-c',default=1.0, help = "Lower the maximum values in order to distingish colors better (default 1.0)",type=float)
+parser.add_argument("--extend",'-e',action = 'store_true', help = "Extend boundary (on periodic fields)")
+parser.add_argument("--max",'-m',action = 'store_true', help = "Make slice passing throuh max value")
+group = parser.add_mutually_exclusive_group(required=False)
+group.add_argument('-z','--xy', action = 'store_true', help = "(Default) Plot plane normal to the z direction (xy plane)")
+group.add_argument('-y','--xz', action = 'store_true', help = "Plot plane normal to the y direction (xz plane)")
+group.add_argument('-x','--yz', action = 'store_true', help = "Plot plane normal to the x direction (yz plane)")
+
+args = parser.parse_args()
+
+filename = args.file
+if os.path.exists('./global'): path='./'
+elif os.path.exists('../global'): path='../'
+elif os.path.exists('../../global'): path='../../'
+elif os.path.exists('../../../global'): path='../../../'
+elif os.path.exists('../../../../global'): path='../../../../'
+elif os.path.exists('../../../../../global'): path='../../../../../'
+else: path = input('Please specify global file directory path: ')
+
+nx,ny,nz,xDomainSize,yDomainSize,zDomainSize = readglobal(path=path)
+
+
+sizefile = os.path.getsize(filename)
+
+if sizefile == nx*ny*nz*8 :
+  fieldoriginal = np.memmap(filename,shape=(nx,ny,nz),order='F',dtype='float64',mode='r')
+elif sizefile == (nx+2)*ny*nz*8: 
+  fieldoriginal = np.memmap(filename,shape=(nx+2,ny,nz),order='F',dtype='float64',mode='r')[:-2,:,:]
+elif sizefile == nx*ny*nz*4 :
+  fieldoriginal = np.memmap(filename,shape=(nx,ny,nz),order='F',dtype='float32',mode='r')
+elif sizefile == (nx+2)*ny*nz*4: 
+  fieldoriginal = np.memmap(filename,shape=(nx+2,ny,nz),order='F',dtype='float32',mode='r')[:-2,:,:]
+
+if args.max:
+  maxv,minv,meanv = maxminmean(fieldoriginal)
+  place = np.where(fieldoriginal == maxv)
+  px = place[0][0]
+  py = place[1][0]
+  pz = place[2][0]
+else:
+  px = nx//2
+  py = ny//2
+  pz = nz//2
+
+if args.xy : 
+  field = fieldoriginal[:,:,pz]
+  nx1 = nx
+  ny1 = ny
+elif args.xz : 
+  field = fieldoriginal[:,py,:]
+  nx1 = nx
+  ny1 = nz
+elif args.yz : 
+  field = fieldoriginal[px,:,:]
+  nx1 = ny
+  ny1 = nz
+else : 
+  field = fieldoriginal[:,:,pz]
+  nx1 = nx
+  ny1 = ny
+
+vmin, vmax = field.min(), field.max()
+
+if vmin < 0 and vmax > 0:
+  if -vmin > vmax: 
+    mp = -vmax/vmin
+    mn = 1.0
+  else:
+    mp = 1.0
+    mn = -vmin/vmax
+    
+  orig_cmap1 = cubehelix.cmap(start=0.18, rot=0.5,minLight=0,maxLight=mp*0.925)
+  orig_cmap2 = cubehelix.cmap(reverse=True,start=0.18, rot=-0.5,minLight=0,maxLight=mn*0.925)
+
+  colors1 = orig_cmap1(np.linspace(0., 1, 128))
+  colors2 = orig_cmap2(np.linspace(0, 1, 128))
+
+  # combine them and build a new colormap
+  colors = np.vstack((colors2, colors1))
+  orig_cmap = mcolors.LinearSegmentedColormap.from_list('my_colormap', colors)
+
+  cmap = remappedColorMap(orig_cmap, midpoint=np.absolute(vmin)/(vmax+np.absolute(vmin)), name='shifted')
+else : cmap = cubehelix.cmap(start=0.3, rot=0.5,minLight=0.05,maxLight=.95) #matplotlib.cm.gnuplot2
+
+if args.extend:
+  nnx = 2*nx1
+  nny = 2*ny1
+  newfield = np.zeros(shape=(nnx,nny),dtype = 'float32')
+  for i in range(1,3):
+    for j in range(1,3):
+      newfield[nx1*(i-1):i*nx1 , ny1*(j-1):j*ny1] = field[:,:].astype('float32')
+  del field
+  field = newfield
+
+plt.rcParams['legend.loc'] = 'best'
+
+plt.style.use('dark_background')
+fig1 = plt.figure(facecolor='black')
+ax1 = fig1.add_subplot(111)
+plot=ax1.pcolormesh(field.transpose(),vmin=args.color*vmin,vmax=args.color*vmax,cmap=cmap)
+ax1.axis([0, nx1, 0, ny1])
+ax1.axis('equal')
+ax1.axis('tight')
+fig1.colorbar(plot)
+
+plt.show()

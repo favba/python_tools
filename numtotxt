@@ -1,0 +1,21 @@
+#!/usr/bin/env python
+
+import numpy as np
+import sys
+import os
+from globalfile import readglobal
+from parallelfuncs import hist
+import argparse
+import matplotlib.pyplot as plt
+
+parser = argparse.ArgumentParser(description='Transform numpy vectors to txt')
+parser.add_argument("file", type = str, nargs='+', help = "filestotransform")
+
+args = parser.parse_args()
+
+filename = args.file
+
+for files in filename:
+  vec = np.load(files)
+  np.savetxt(files+".txt",vec)
+

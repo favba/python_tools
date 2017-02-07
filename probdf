@@ -1,0 +1,77 @@
+#!/usr/bin/env python
+
+import numpy as np
+import sys
+import os
+from globalfile import readglobal
+from parallelfuncs import hist
+import argparse
+import matplotlib.pyplot as plt
+
+parser = argparse.ArgumentParser(description='Make probability density function of data file. Or plot existing ones')
+parser.add_argument("file", type = str, nargs='+', help = "file with data to calculate pdf or to be ploted")
+parser.add_argument("--bins",'-b',default=250, help = "Number of bins to use (default 250)",type=int)
+parser.add_argument("--plot",'-p',action='store_true', help = "Plot existing .pdf.npy file")
+
+args = parser.parse_args()
+
+filename = args.file
+
+if args.plot:
+
+  plt.rcParams['legend.loc'] = 'best'
+  fig = plt.figure()#facecolor='black'
+
+  ax = [None]*len(filename)
+  index = [None]*len(filename)
+  plot = [None]*len(filename)
+  for i, files in enumerate(filename):
+    xy = np.load(files)
+    ax[i] = fig.add_subplot(111)
+    plot[i]=ax[i].plot(xy[:,0],xy[:,1],'-',label=files)
+    ax[i].legend()
+    ax[i].grid(True)
+  plt.show()
+  
+else:
+  bins = args.bins
+
+  if os.path.exists('./global'): path='./'
+  elif os.path.exists('../global'): path='../'
+  elif os.path.exists('../../global'): path='../../'
+  elif os.path.exists('../../../global'): path='../../../'
+  elif os.path.exists('../../../../global'): path='../../../../'
+  elif os.path.exists('../../../../../global'): path='../../../../../'
+  else: path = input('Please specify global file directory path: ')
+
+  nx,ny,nz,xDomainSize,yDomainSize,zDomainSize = readglobal(path=path,tell=False)
+
+  sizefile = os.path.getsize(filename[0])
+
+  # if sizefile == nx*ny*nz*8 :
+  #   field = np.memmap(filename[0],shape=(nx,ny,nz),order='F',dtype='float64',mode='r')
+  # elif sizefile == (nx+2)*ny*nz*8: 
+  #   field = np.memmap(filename[0],shape=(nx+2,ny,nz),order='F',dtype='float64',mode='r')[:-2,:,:]
+  # elif sizefile == nx*ny*nz*4 :
+  #   field = np.memmap(filename[0],shape=(nx,ny,nz),order='F',dtype='float32',mode='r')
+  # elif sizefile == (nx+2)*ny*nz*4:
+  #   field = np.memmap(filename[0],shape=(nx+2,ny,nz),order='F',dtype='float32',mode='r')[:-2,:,:]
+
+  if sizefile == nx*ny*nz*8 :
+    field = np.reshape(np.fromfile(filename[0],dtype='float64'),(nx,ny,nz),order='F')
+  elif sizefile == (nx+2)*ny*nz*8: 
+    field = np.reshape(np.fromfile(filename[0],dtype='float64'),(nx+2,ny,nz),order='F')[:-2,:,:]
+  elif sizefile == nx*ny*nz*4 :
+    field = np.reshape(np.fromfile(filename[0],dtype='float32'),(nx,ny,nz),order='F')
+  elif sizefile == (nx+2)*ny*nz*4:
+    field = np.reshape(np.fromfile(filename[0],dtype='float32'),(nx+2,ny,nz),order='F')[:-2,:,:]
+
+
+  y,binEdges = hist(field,bins=bins,density=True)
+  x = 0.5*(binEdges[1:]+binEdges[:-1])
+
+  result=np.zeros(shape = (bins,2))
+  result[:,0] = x
+  result[:,1] = y
+
+  np.save(filename[0]+'.pdf',result)

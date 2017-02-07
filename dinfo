@@ -1,0 +1,48 @@
+#!/usr/bin/env python
+"""
+Find min, max or mean of field
+"""
+import numpy as np
+import sys
+from globalfile import readglobal
+import argparse
+from parallelfuncs import maxminmean, maxmin
+import os
+
+parser = argparse.ArgumentParser(description='Find min, max or mean of field')
+parser.add_argument("file", type = str, help = "file with data")
+
+args = parser.parse_args()
+
+if os.path.exists('./global'): path='./'
+elif os.path.exists('../global'): path='../'
+elif os.path.exists('../../global'): path='../../'
+elif os.path.exists('../../../global'): path='../../../'
+elif os.path.exists('../../../../global'): path='../../../../'
+elif os.path.exists('../../../../../global'): path='../../../../../'
+else: path = input('Please specify global file directory path: ')
+
+nx,ny,nz,xDomainSize,yDomainSize,zDomainSize = readglobal(path=path)
+
+
+sizefile = os.path.getsize(args.file)
+
+if sizefile == nx*ny*nz*8 :
+  dtype='float64'
+  field = np.memmap(sys.argv[1],shape=(nx,ny,nz),order='F',dtype='float64',mode='r')
+elif sizefile == (nx+2)*ny*nz*8: 
+  dtype='float64'
+  field = np.memmap(sys.argv[1],shape=(nx+2,ny,nz),order='F',dtype='float64',mode='r')[:-2,:,:]
+elif sizefile == nx*ny*nz*4 :
+  dtype='float32'
+  field = np.memmap(sys.argv[1],shape=(nx,ny,nz),order='F',dtype='float32',mode='r')
+elif sizefile == (nx+2)*ny*nz*4: 
+  dtype='float32'
+  field = np.memmap(sys.argv[1],shape=(nx+2,ny,nz),order='F',dtype='float32',mode='r')[:-2,:,:]
+
+maxv, minv, meanv, imax, jmax, kmax, imin, jmin, kmin = None, None, None, None, None, None, None, None, None
+  
+maxv, minv, meanv, imax, jmax, kmax, imin, jmin, kmin = maxminmean(field,index=True)
+
+tell = "Mean Value: {}\nMax Value: {} at [{}, {}, {}]\nMin Value: {} at [{}, {}, {}]".format(meanv,maxv,imax,jmax,kmax,minv,imin,jmin,kmin)
+print(tell)
