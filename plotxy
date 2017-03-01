@@ -5,7 +5,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-filename = sys.argv[1:end]
+filename = sys.argv[1:-1]
 
 plt.rcParams['legend.loc'] = 'best'
 fig = plt.figure()#facecolor='black'
@@ -14,9 +14,9 @@ ax = [None]*len(filename)
 index = [None]*len(filename)
 plot = [None]*len(filename)
 for i, files in enumerate(filename):
-  if files.split(".")[end] == "npy":
+  if files.split(".")[-1] == "npy":
     xy = np.load(files)
-  elif files.split(".")[end] == "txt":
+  elif files.split(".")[-1] == "txt":
     xy = np.loadtxt(files)
   ax[i] = fig.add_subplot(111)
   plot[i]=ax[i].plot(xy[:,0],xy[:,1],'-',label=files)
