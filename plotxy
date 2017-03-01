@@ -1,0 +1,25 @@
+#!/usr/bin/env python
+
+import sys
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+
+filename = sys.argv[1:end]
+
+plt.rcParams['legend.loc'] = 'best'
+fig = plt.figure()#facecolor='black'
+
+ax = [None]*len(filename)
+index = [None]*len(filename)
+plot = [None]*len(filename)
+for i, files in enumerate(filename):
+  if files.split(".")[end] == "npy":
+    xy = np.load(files)
+  elif files.split(".")[end] == "txt":
+    xy = np.loadtxt(files)
+  ax[i] = fig.add_subplot(111)
+  plot[i]=ax[i].plot(xy[:,0],xy[:,1],'-',label=files)
+  ax[i].legend()
+  ax[i].grid(True)
+plt.show()
