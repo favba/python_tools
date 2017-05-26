@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 filename = sys.argv[1:]
 
 plt.rcParams['legend.loc'] = 'best'
+plt.rc('text', usetex=True)
+plt.rc('font', family='serif')
 fig = plt.figure()#facecolor='black'
 
 ax = [None]*len(filename)
