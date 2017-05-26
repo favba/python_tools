@@ -21,7 +21,7 @@ for i, files in enumerate(filename):
   elif files.split(".")[-1] == "txt":
     xy = np.loadtxt(files)
   ax[i] = fig.add_subplot(111)
-  plot[i]=ax[i].plot(xy[:,0],xy[:,1],'-',label=files)
+  plot[i]=ax[i].plot(xy[:,0],xy[:,1],'-',label=files.split(".")[0])
   ax[i].legend()
   ax[i].grid(True)
 plt.show()
