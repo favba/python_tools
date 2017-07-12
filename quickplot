@@ -20,6 +20,7 @@ parser = argparse.ArgumentParser(
   description='Make colormap of a slice of the input file. A file named "global" must be present in the directory or parent directories')
 parser.add_argument("file", type = str, help = "file with data to be ploted")
 parser.add_argument("--color",'-c',default=1.0, help = "Lower the maximum values in order to distingish colors better (default 1.0)",type=float)
+parser.add_argument("--point",'-p',default=-1, help = "Plot plane passing through index POINT",type=int)
 parser.add_argument("--extend",'-e',action = 'store_true', help = "Extend boundary (on periodic fields)")
 parser.add_argument("--max",'-m',action = 'store_true', help = "Make slice passing throuh max value")
 group = parser.add_mutually_exclusive_group(required=False)
@@ -58,6 +59,10 @@ if args.max:
   px = place[0][0]
   py = place[1][0]
   pz = place[2][0]
+elif args.point != -1:
+  px = args.point
+  py = args.point
+  pz = args.point
 else:
   px = nx//2
   py = ny//2
