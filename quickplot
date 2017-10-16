@@ -54,7 +54,7 @@ elif sizefile == (nx+2)*ny*nz*4:
   fieldoriginal = np.memmap(filename,shape=(nx+2,ny,nz),order='F',dtype='float32',mode='r')[:-2,:,:]
 
 if args.max:
-  maxv,minv,meanv = maxminmean(fieldoriginal)
+  maxv = np.amax(fieldoriginal)
   place = np.where(fieldoriginal == maxv)
   px = place[0][0]
   py = place[1][0]
