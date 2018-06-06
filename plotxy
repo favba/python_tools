@@ -16,12 +16,15 @@ ax = [None]*len(filename)
 index = [None]*len(filename)
 plot = [None]*len(filename)
 for i, files in enumerate(filename):
-  if files.split(".")[-1] == "npy":
-    xy = np.load(files)
-  elif files.split(".")[-1] == "txt":
-    xy = np.loadtxt(files)
-  ax[i] = fig.add_subplot(111)
-  plot[i]=ax[i].plot(xy[:,0],xy[:,1],'-',label=files.split(".")[0])
-  ax[i].legend()
-  ax[i].grid(True)
+    if files.split(".")[-1] == "npy":
+        xy = np.load(files)
+    elif files.split(".")[-1] == "txt":
+        xy = np.loadtxt(files)
+    ax[i] = fig.add_subplot(111)
+    if xy.shape[1] == 2:
+        plot[i]=ax[i].plot(xy[:,0], xy[:,1], '-', label=files.split(".")[0])
+    elif xy.shape[1] > 2:
+        plot[i]=ax[i].errorbar(xy[:,0], xy[:,1], '-', yerr=xy[:,2], label=files.split(".")[0]) 
+    ax[i].legend()
+    ax[i].grid(True)
 plt.show()
