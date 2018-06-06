@@ -24,7 +24,7 @@ for i, files in enumerate(filename):
     if xy.shape[1] == 2:
         plot[i]=ax[i].plot(xy[:,0], xy[:,1], '-', label=files.split(".")[0])
     elif xy.shape[1] > 2:
-        plot[i]=ax[i].errorbar(xy[:,0], xy[:,1], '-', yerr=xy[:,2], label=files.split(".")[0]) 
+        plot[i]=ax[i].errorbar(xy[:,0], xy[:,1], yerr=xy[:,2], label=files.split(".")[0]) 
     ax[i].legend()
     ax[i].grid(True)
 plt.show()
